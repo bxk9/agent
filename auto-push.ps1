@@ -8,18 +8,27 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Force UTF-8 so git outputs real characters, not octal escapes
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$env:LC_ALL = "C.UTF-8"
+
 function Get-UntrackedFiles {
-    $raw = git ls-files --others --exclude-standard 2>&1
+    # -z  : NUL-separated output, no quoting, no escaping
+    # core.quotepath=false : extra safety to avoid octal escapes
+    $rawBytes = git -c core.quotepath=false ls-files --others --exclude-standard -z 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERROR] Failed to list untracked files." -ForegroundColor Red
         return @()
     }
-    if (-not $raw) {
+    if (-not $rawBytes) {
         return @()
     }
-    # Ensure we always return an array
-    $files = @($raw | Where-Object { $_ -match '^[^\s]' -and $_.Trim().Length -gt 0 })
-    return $files
+
+    # Join all output into one string, then split by NUL
+    $joined = $rawBytes -join ""
+    $files = $joined -split "`0" | Where-Object { $_.Trim().Length -gt 0 }
+
+    return @($files)
 }
 
 function Push-OneFile {
@@ -81,10 +90,11 @@ while ($true) {
         Write-Host "[SKIP] Failed to push, skipping this file." -ForegroundColor Red
     }
 
-    # Random sleep between 3 and 5 seconds
-    $delay = Get-Random -Minimum 3 -Maximum 6
-    Write-Host "[WAIT] Sleeping $delay seconds ..." -ForegroundColor DarkGray
-    Start-Sleep -Seconds $delay
+    # Random sleep between 3.0 and 6.0 seconds (with decimals)
+    $delay = Get-Random -Minimum 25.0 -Maximum 34.0
+    $delayRounded = [math]::Round($delay, 1)
+    Write-Host "[WAIT] Sleeping $delayRounded seconds ..." -ForegroundColor DarkGray
+    Start-Sleep -Milliseconds ([int]($delay * 1000))
 }
 
 Write-Host ""
