@@ -91,7 +91,7 @@ while ($true) {
     }
 
     # Random sleep between 3.0 and 6.0 seconds (with decimals)
-    $delay = Get-Random -Minimum 3.0 -Maximum 6.0
+    $delay = Get-Random -Minimum 1.0 -Maximum 4.0
     $delayRounded = [math]::Round($delay, 1)
     Write-Host "[WAIT] Sleeping $delayRounded seconds ..." -ForegroundColor DarkGray
     Start-Sleep -Milliseconds ([int]($delay * 1000))
